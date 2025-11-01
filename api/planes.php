@@ -23,9 +23,6 @@ require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/auth.php';
 require_once __DIR__ . '/../db.php';
 
-// Inicializar CORS (maneja OPTIONS y configura headers)
-initCors();
-
 $method = $_SERVER['REQUEST_METHOD'];
 $id = $_GET['id'] ?? null;
 $page = isset($_GET['page']) ? (int)$_GET['page'] : DEFAULT_PAGE;

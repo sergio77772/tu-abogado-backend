@@ -1,0 +1,30 @@
+# .htaccess mejorado para CORS en InfinityFree
+# Reemplaza tu .htaccess actual con este si el problema persiste
+
+RewriteEngine On
+
+# Permitir acceso directo a archivos PHP
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Headers CORS - CRÍTICO: debe ir antes de cualquier otra cosa
+<IfModule mod_headers.c>
+    # Headers para todas las peticiones
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization, X-Requested-With, Accept, Origin"
+    Header always set Access-Control-Max-Age "86400"
+    
+    # Manejar OPTIONS explícitamente
+    RewriteCond %{REQUEST_METHOD} OPTIONS
+    RewriteRule ^(.*)$ $1 [R=200,L]
+</IfModule>
+
+# Headers específicos para archivos YAML (Swagger)
+<FilesMatch "\.(yaml|yml)$">
+    Header set Access-Control-Allow-Origin "*"
+    Header set Content-Type "text/yaml; charset=utf-8"
+</FilesMatch>
+
+ErrorDocument 404 /index.php
+
