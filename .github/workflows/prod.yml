@@ -16,7 +16,7 @@ jobs:
     - name: Deploy to FTP Server
       uses: SamKirkland/FTP-Deploy-Action@4.3.0
       with:
-        server: c2651511.ferozo.com  # El servidor FTP (sin "ftp://")
+        server: ftpupload.net  # El servidor FTP (sin "ftp://")
         username: ${{ secrets.FTP_USERNAME }}
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./  # Subir todo el contenido del repositorio
