@@ -10,6 +10,12 @@ RewriteRule ^ - [L]
     Header set Access-Control-Allow-Origin "*"
     Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
     Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+    
+    # Headers específicos para archivos YAML (Swagger)
+    <FilesMatch "\.(yaml|yml)$">
+        Header set Access-Control-Allow-Origin "*"
+        Header set Content-Type "text/yaml; charset=utf-8"
+    </FilesMatch>
 </IfModule>
 
 # Páginas de error personalizadas (opcional)

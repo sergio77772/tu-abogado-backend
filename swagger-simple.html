@@ -6,27 +6,59 @@
     <title>Tu Abogado en Línea - API Documentation</title>
     <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
     <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4/dist/js-yaml.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
 </head>
 <body>
     <div id="swagger-ui"></div>
     <script>
         window.onload = function() {
-            SwaggerUIBundle({
-                // Usar la URL del servidor donde esté alojado swagger.yaml
-                url: 'https://tuabogadoenlinea.free.nf/apis/swagger.yaml',
-                // O usar el contenido directamente (requiere convertir YAML a JSON)
-                // spec: {...},
-                dom_id: '#swagger-ui',
-                presets: [
-                    SwaggerUIBundle.presets.apis,
-                    SwaggerUIStandalonePreset
-                ],
-                layout: "StandaloneLayout",
-                deepLinking: true,
-                filter: true,
-                validatorUrl: null
-            });
+            // Intentar cargar el YAML desde una ruta relativa (mismo origen, sin CORS)
+            const yamlUrl = './swagger.yaml';
+            const absoluteUrl = window.location.protocol + '//' + window.location.host + window.location.pathname.replace(/[^/]*$/, '') + 'swagger.yaml';
+            
+            // Función para cargar YAML y convertirlo
+            function loadSwagger() {
+                fetch(yamlUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('No se pudo cargar swagger.yaml');
+                        }
+                        return response.text();
+                    })
+                    .then(yamlText => {
+                        // Convertir YAML a JSON usando js-yaml
+                        const spec = jsyaml.load(yamlText);
+                        
+                        // Inicializar Swagger UI con la especificación
+                        SwaggerUIBundle({
+                            spec: spec,
+                            dom_id: '#swagger-ui',
+                            presets: [
+                                SwaggerUIBundle.presets.apis,
+                                SwaggerUIStandalonePreset
+                            ],
+                            layout: "StandaloneLayout",
+                            deepLinking: true,
+                            filter: true,
+                            validatorUrl: null,
+                            tryItOutEnabled: true
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error cargando Swagger:', error);
+                        document.getElementById('swagger-ui').innerHTML = 
+                            '<div style="padding: 20px; text-align: center;">' +
+                            '<h2>Error cargando la documentación</h2>' +
+                            '<p>No se pudo cargar el archivo swagger.yaml</p>' +
+                            '<p style="color: #666;">Asegúrate de que el archivo swagger.yaml esté en el mismo directorio que este archivo HTML.</p>' +
+                            '<p style="color: #666;">Error: ' + error.message + '</p>' +
+                            '</div>';
+                    });
+            }
+            
+            // Cargar Swagger
+            loadSwagger();
         };
     </script>
 </body>
