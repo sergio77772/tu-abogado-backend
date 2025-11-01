@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CORS con Axios</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Test CORS con Axios</h1>
+    <button onclick="testGet()">Test GET</button>
+    <button onclick="testPost()">Test POST</button>
+    <pre id="result"></pre>
+
+    <script>
+        const API_URL = 'http://tuabogadoenlinea.free.nf/apis';
+
+        async function testGet() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Probando GET...';
+            
+            try {
+                const response = await axios.get(`${API_URL}/api/planes.php`, {
+                    params: { page: 1, limit: 10 }
+                });
+                resultEl.textContent = JSON.stringify(response.data, null, 2);
+            } catch (error) {
+                resultEl.textContent = 'Error: ' + JSON.stringify({
+                    message: error.message,
+                    response: error.response?.data,
+                    status: error.response?.status,
+                    headers: error.response?.headers
+                }, null, 2);
+            }
+        }
+
+        async function testPost() {
+            const resultEl = document.getElementById('result');
+            resultEl.textContent = 'Probando POST...';
+            
+            try {
+                const response = await axios.post(`${API_URL}/api/auth.php?action=login`, {
+                    email: 'test@example.com',
+                    contraseña: 'test123'
+                });
+                resultEl.textContent = JSON.stringify(response.data, null, 2);
+            } catch (error) {
+                resultEl.textContent = 'Error: ' + JSON.stringify({
+                    message: error.message,
+                    response: error.response?.data,
+                    status: error.response?.status
+                }, null, 2);
+            }
+        }
+    </script>
+</body>
+</html>
+

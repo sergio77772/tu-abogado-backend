@@ -2,12 +2,15 @@
 // Headers CORS - DEBE IR PRIMERO, ANTES DE CUALQUIER COSA
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin");
+header("Access-Control-Allow-Credentials: false");
+header("Access-Control-Max-Age: 86400");
 
 // Manejar peticiones preflight (OPTIONS)
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
-    exit;
+    header("Content-Length: 0");
+    exit(0);
 }
 
 /**
