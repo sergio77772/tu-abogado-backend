@@ -238,8 +238,6 @@ paths:
                         type: integer
                       compras:
                         type: array
-      security:
-        - BearerAuth: []
     post:
       tags:
         - Consultas
