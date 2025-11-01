@@ -64,50 +64,44 @@ function verifyToken($token) {
 }
 
 /**
- * Función alternativa para obtener headers (compatible con todos los servidores)
+ * Obtiene el token del header Authorization
+ * Compatible con todos los servidores (Apache, Nginx, etc.)
  */
-function getAllHeaders() {
-    if (function_exists('getallheaders')) {
-        return getallheaders();
-    }
-    
-    // Alternativa para servidores que no tienen getallheaders()
-    $headers = [];
-    foreach ($_SERVER as $name => $value) {
-        if (substr($name, 0, 5) == 'HTTP_') {
-            $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+function getAuthToken() {
+    // Primero intentar obtener directamente de $_SERVER (más seguro)
+    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $auth = $_SERVER['HTTP_AUTHORIZATION'];
+    } elseif (isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION'])) {
+        $auth = $_SERVER['REDIRECT_HTTP_AUTHORIZATION'];
+    } else {
+        // Intentar obtener desde headers usando función nativa si existe
+        $auth = null;
+        if (function_exists('getallheaders')) {
+            $headers = @getallheaders();
+            if ($headers) {
+                foreach ($headers as $key => $value) {
+                    if (strtolower($key) === 'authorization') {
+                        $auth = $value;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        // Si aún no encontramos el header, buscar manualmente en $_SERVER
+        if (!$auth) {
+            foreach ($_SERVER as $name => $value) {
+                if (strtoupper($name) === 'HTTP_AUTHORIZATION') {
+                    $auth = $value;
+                    break;
+                }
+            }
         }
     }
     
-    // Agregar headers especiales
-    if (isset($_SERVER['CONTENT_TYPE'])) {
-        $headers['Content-Type'] = $_SERVER['CONTENT_TYPE'];
-    }
-    if (isset($_SERVER['CONTENT_LENGTH'])) {
-        $headers['Content-Length'] = $_SERVER['CONTENT_LENGTH'];
-    }
-    
-    return $headers;
-}
-
-/**
- * Obtiene el token del header Authorization
- */
-function getAuthToken() {
-    $headers = getAllHeaders();
-    
-    // Buscar Authorization en diferentes formatos
-    $auth = null;
-    if (isset($headers['Authorization'])) {
-        $auth = $headers['Authorization'];
-    } elseif (isset($headers['authorization'])) {
-        $auth = $headers['authorization'];
-    } elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-        $auth = $_SERVER['HTTP_AUTHORIZATION'];
-    }
-    
+    // Extraer el token Bearer
     if ($auth && preg_match('/Bearer\s+(.*)$/i', $auth, $matches)) {
-        return $matches[1];
+        return trim($matches[1]);
     }
     
     return null;
