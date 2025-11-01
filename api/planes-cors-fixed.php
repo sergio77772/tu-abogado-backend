@@ -1,27 +1,35 @@
 <?php
-// Headers CORS - DEBE IR PRIMERO, ANTES DE CUALQUIER COSA
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization");
-
-// Manejar peticiones preflight (OPTIONS)
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
-
 /**
- * API de Planes
+ * API de Planes - Versión con CORS mejorado
  * Endpoints: GET, POST, PUT, DELETE /api/planes.php
  */
 
+// CRÍTICO: Manejar OPTIONS ANTES de cualquier cosa (sin espacios antes de <?php)
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    // Limpiar cualquier output previo
+    if (ob_get_level()) {
+        ob_clean();
+    }
+    
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+    header('Access-Control-Max-Age: 86400');
+    header('Content-Length: 0');
+    http_response_code(200);
+    exit(0);
+}
+
+// Headers CORS para todas las demás peticiones
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+
+// Ahora cargar las dependencias
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/auth.php';
 require_once __DIR__ . '/../db.php';
-
-// Inicializar CORS (maneja OPTIONS y configura headers)
-initCors();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $id = $_GET['id'] ?? null;
@@ -38,10 +46,15 @@ switch ($method) {
             $plan = $stmt->fetch();
             
             if (!$plan) {
-                jsonError('Plan no encontrado', 404);
+                header('Content-Type: application/json');
+                http_response_code(404);
+                echo json_encode(['error' => 'Plan no encontrado'], JSON_UNESCAPED_UNICODE);
+                exit;
             }
             
-            jsonResponse($plan);
+            header('Content-Type: application/json');
+            echo json_encode($plan, JSON_UNESCAPED_UNICODE);
+            exit;
             
         } else {
             // Listar planes (solo activos para clientes, todos para admin)
@@ -61,12 +74,14 @@ switch ($method) {
             $stmt->execute();
             $planes = $stmt->fetchAll();
             
-            jsonResponse([
+            header('Content-Type: application/json');
+            echo json_encode([
                 'planes' => $planes,
                 'total' => $total,
                 'totalPages' => $totalPages,
                 'currentPage' => $page
-            ]);
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
         }
         break;
         
@@ -77,9 +92,11 @@ switch ($method) {
         $data = json_decode(file_get_contents('php://input'), true);
         validateRequired($data, ['nombre', 'tipo', 'cantidad_consultas', 'precio']);
         
-        // Validar tipo
         if (!in_array($data['tipo'], ['paquete', 'suscripcion'])) {
-            jsonError('Tipo no válido. Debe ser: paquete o suscripcion', 400);
+            header('Content-Type: application/json');
+            http_response_code(400);
+            echo json_encode(['error' => 'Tipo no válido. Debe ser: paquete o suscripcion'], JSON_UNESCAPED_UNICODE);
+            exit;
         }
         
         $stmt = $pdo->prepare("
@@ -103,68 +120,24 @@ switch ($method) {
             $stmt->execute(['id' => $planId]);
             $plan = $stmt->fetch();
             
-            jsonResponse(['message' => 'Plan creado exitosamente', 'plan' => $plan], 201);
+            header('Content-Type: application/json');
+            http_response_code(201);
+            echo json_encode(['message' => 'Plan creado exitosamente', 'plan' => $plan], JSON_UNESCAPED_UNICODE);
+            exit;
             
         } catch (PDOException $e) {
-            jsonError('Error al crear plan: ' . $e->getMessage(), 500);
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode(['error' => 'Error al crear plan: ' . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+            exit;
         }
-        break;
-        
-    case 'PUT':
-        // Actualizar plan (solo admin)
-        requireRole(ROLE_ADMIN);
-        
-        if (!$id) {
-            jsonError('ID de plan requerido', 400);
-        }
-        
-        $data = json_decode(file_get_contents('php://input'), true);
-        
-        // Construir query dinámicamente
-        $fields = [];
-        $params = ['id' => $id];
-        
-        $allowedFields = ['nombre', 'descripcion', 'tipo', 'cantidad_consultas', 'precio', 'duracion_dias', 'activo'];
-        foreach ($allowedFields as $field) {
-            if (isset($data[$field])) {
-                $fields[] = "$field = :$field";
-                $params[$field] = $data[$field];
-            }
-        }
-        
-        if (empty($fields)) {
-            jsonError('No hay campos para actualizar', 400);
-        }
-        
-        $sql = "UPDATE planes SET " . implode(', ', $fields) . " WHERE id = :id";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        
-        $stmt = $pdo->prepare("SELECT * FROM planes WHERE id = :id");
-        $stmt->execute(['id' => $id]);
-        $plan = $stmt->fetch();
-        
-        jsonResponse(['message' => 'Plan actualizado exitosamente', 'plan' => $plan]);
-        break;
-        
-    case 'DELETE':
-        // Eliminar plan (solo admin) - mejor desactivar
-        requireRole(ROLE_ADMIN);
-        
-        if (!$id) {
-            jsonError('ID de plan requerido', 400);
-        }
-        
-        // En lugar de eliminar, desactivamos
-        $stmt = $pdo->prepare("UPDATE planes SET activo = 0 WHERE id = :id");
-        $stmt->execute(['id' => $id]);
-        
-        jsonResponse(['message' => 'Plan desactivado exitosamente']);
         break;
         
     default:
-        jsonError('Método no soportado', 405);
-        break;
+        header('Content-Type: application/json');
+        http_response_code(405);
+        echo json_encode(['error' => 'Método no soportado'], JSON_UNESCAPED_UNICODE);
+        exit;
 }
 ?>
 

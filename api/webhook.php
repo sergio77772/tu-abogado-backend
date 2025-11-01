@@ -1,4 +1,15 @@
 <?php
+// Headers CORS - DEBE IR PRIMERO, ANTES DE CUALQUIER COSA
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+
+// Manejar peticiones preflight (OPTIONS)
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 /**
  * Webhook para recibir notificaciones de pagos
  * Integración con Mercado Pago, PayPal, Stripe
@@ -7,8 +18,6 @@
 require_once __DIR__ . '/../config/config.php';
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../db.php';
-
-setCorsHeaders();
 
 // Log para debugging (crear carpeta logs si no existe)
 $logFile = __DIR__ . '/../logs/webhook.log';
