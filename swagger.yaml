@@ -1,0 +1,698 @@
+openapi: 3.0.3
+info:
+  title: Tu Abogado en Línea - API
+  description: |
+    API REST para la plataforma "Tu Abogado en Línea". 
+    Conecta clientes con abogados a través de planes de consultas legales.
+  version: 1.0.0
+  contact:
+    name: Soporte API
+    url: http://tuabogadoenlinea.free.nf
+servers:
+  - url: http://tuabogadoenlinea.free.nf/apis
+    description: Servidor de producción (InfinityFree)
+  - url: http://localhost/apis
+    description: Servidor local de desarrollo
+
+tags:
+  - name: Autenticación
+    description: Registro y login de usuarios
+  - name: Planes
+    description: Gestión de planes de consultas
+  - name: Compras
+    description: Gestión de compras de planes
+  - name: Consultas
+    description: Sistema de consultas legales
+  - name: Administración
+    description: Panel administrativo
+
+paths:
+  /api/auth.php:
+    post:
+      tags:
+        - Autenticación
+      summary: Registrar o iniciar sesión
+      operationId: auth
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [register, login]
+          description: Acción a realizar (register o login)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/RegisterRequest'
+                - $ref: '#/components/schemas/LoginRequest'
+            examples:
+              register:
+                summary: Ejemplo de registro
+                value:
+                  nombre: "Juan Pérez"
+                  email: "juan@example.com"
+                  contraseña: "password123"
+                  rol: "cliente"
+              login:
+                summary: Ejemplo de login
+                value:
+                  email: "juan@example.com"
+                  contraseña: "password123"
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '201':
+          description: Usuario registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/planes.php:
+    get:
+      tags:
+        - Planes
+      summary: Listar planes disponibles
+      operationId: listPlanes
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Lista de planes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanesResponse'
+      security: []
+    post:
+      tags:
+        - Planes
+      summary: Crear un nuevo plan (Admin)
+      operationId: createPlan
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlanInput'
+      responses:
+        '201':
+          description: Plan creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    parameters:
+      - name: id
+        in: query
+        schema:
+          type: integer
+        description: ID del plan (para GET, PUT, DELETE)
+
+  /api/compras.php:
+    get:
+      tags:
+        - Compras
+      summary: Listar compras del usuario
+      operationId: listCompras
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          schema:
+            type: integer
+          description: ID de compra específica
+      responses:
+        '200':
+          description: Lista de compras
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Compra'
+                  - type: object
+                    properties:
+                      compras:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Compra'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - Compras
+      summary: Crear una compra (Cliente)
+      operationId: createCompra
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompraInput'
+      responses:
+        '201':
+          description: Compra creada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  compra:
+                    $ref: '#/components/schemas/Compra'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/consultas.php:
+    get:
+      tags:
+        - Consultas
+      summary: Listar consultas
+      operationId: listConsultas
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          schema:
+            type: integer
+          description: ID de consulta específica
+        - name: action
+          in: query
+          schema:
+            type: string
+            enum: [disponibles, pendientes]
+          description: Acción especial (disponibles para clientes, pendientes para abogados)
+      responses:
+        '200':
+          description: Lista de consultas o consulta específica
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Consulta'
+                  - type: object
+                    properties:
+                      consultas:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Consulta'
+                      consultas_disponibles:
+                        type: integer
+                      compras:
+                        type: array
+      security:
+        - BearerAuth: []
+    post:
+      tags:
+        - Consultas
+      summary: Crear una nueva consulta (Cliente)
+      operationId: createConsulta
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultaInput'
+      responses:
+        '201':
+          description: Consulta creada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  consulta:
+                    $ref: '#/components/schemas/Consulta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags:
+        - Consultas
+      summary: Responder o actualizar consulta
+      operationId: updateConsulta
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsultaUpdate'
+      responses:
+        '200':
+          description: Consulta actualizada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  consulta:
+                    $ref: '#/components/schemas/Consulta'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/admin.php:
+    get:
+      tags:
+        - Administración
+      summary: Panel administrativo
+      operationId: admin
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: action
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [stats, users, abogados, compras]
+          description: Acción del panel admin
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: rol
+          in: query
+          schema:
+            type: string
+            enum: [cliente, abogado, admin]
+        - name: estado
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Datos del panel administrativo
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/Stats'
+                  - $ref: '#/components/schemas/UsersResponse'
+                  - $ref: '#/components/schemas/AbogadosResponse'
+                  - $ref: '#/components/schemas/ComprasResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT obtenido al hacer login
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - nombre
+        - email
+        - contraseña
+        - rol
+      properties:
+        nombre:
+          type: string
+          example: "Juan Pérez"
+        email:
+          type: string
+          format: email
+          example: "juan@example.com"
+        contraseña:
+          type: string
+          minLength: 6
+          example: "password123"
+        rol:
+          type: string
+          enum: [cliente, abogado]
+          example: "cliente"
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - contraseña
+      properties:
+        email:
+          type: string
+          format: email
+          example: "juan@example.com"
+        contraseña:
+          type: string
+          example: "password123"
+
+    AuthResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Login exitoso"
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+          example: "eyJ0eXAiOiJKV1QiLCJhbGc..."
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        email:
+          type: string
+        rol:
+          type: string
+          enum: [cliente, abogado, admin]
+
+    Plan:
+      type: object
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+          example: "Paquete Básico"
+        descripcion:
+          type: string
+          nullable: true
+        tipo:
+          type: string
+          enum: [paquete, suscripcion]
+        cantidad_consultas:
+          type: integer
+        precio:
+          type: number
+          format: float
+        duracion_dias:
+          type: integer
+          nullable: true
+        activo:
+          type: boolean
+
+    PlanInput:
+      type: object
+      required:
+        - nombre
+        - tipo
+        - cantidad_consultas
+        - precio
+      properties:
+        nombre:
+          type: string
+        descripcion:
+          type: string
+        tipo:
+          type: string
+          enum: [paquete, suscripcion]
+        cantidad_consultas:
+          type: integer
+        precio:
+          type: number
+        duracion_dias:
+          type: integer
+        activo:
+          type: boolean
+          default: true
+
+    PlanesResponse:
+      type: object
+      properties:
+        planes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Plan'
+        total:
+          type: integer
+        totalPages:
+          type: integer
+        currentPage:
+          type: integer
+
+    Compra:
+      type: object
+      properties:
+        id:
+          type: integer
+        usuario_id:
+          type: integer
+        plan_id:
+          type: integer
+        estado:
+          type: string
+          enum: [pendiente, pagada, cancelada]
+        fecha_compra:
+          type: string
+          format: date-time
+        fecha_pago:
+          type: string
+          format: date-time
+          nullable: true
+        monto:
+          type: number
+        consultas_totales:
+          type: integer
+        consultas_usadas:
+          type: integer
+        consultas_disponibles:
+          type: integer
+        plan_nombre:
+          type: string
+
+    CompraInput:
+      type: object
+      required:
+        - plan_id
+      properties:
+        plan_id:
+          type: integer
+        estado:
+          type: string
+          enum: [pendiente, pagada]
+        metodo_pago:
+          type: string
+        transaccion_id:
+          type: string
+
+    Consulta:
+      type: object
+      properties:
+        id:
+          type: integer
+        cliente_id:
+          type: integer
+        abogado_id:
+          type: integer
+          nullable: true
+        compra_id:
+          type: integer
+        estado:
+          type: string
+          enum: [abierta, respondida, cerrada]
+        asunto:
+          type: string
+        mensaje_inicial:
+          type: string
+        respuesta:
+          type: string
+          nullable: true
+        fecha_creacion:
+          type: string
+          format: date-time
+        fecha_respuesta:
+          type: string
+          format: date-time
+          nullable: true
+        cliente_nombre:
+          type: string
+        abogado_nombre:
+          type: string
+          nullable: true
+
+    ConsultaInput:
+      type: object
+      required:
+        - compra_id
+        - asunto
+        - mensaje_inicial
+      properties:
+        compra_id:
+          type: integer
+        asunto:
+          type: string
+        mensaje_inicial:
+          type: string
+
+    ConsultaUpdate:
+      type: object
+      properties:
+        respuesta:
+          type: string
+        cerrar:
+          type: boolean
+        abogado_id:
+          type: integer
+
+    Stats:
+      type: object
+      properties:
+        usuarios:
+          type: object
+        planes_activos:
+          type: integer
+        compras:
+          type: object
+        consultas:
+          type: object
+        ingresos_totales:
+          type: number
+
+    UsersResponse:
+      type: object
+      properties:
+        usuarios:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        total:
+          type: integer
+        totalPages:
+          type: integer
+        currentPage:
+          type: integer
+
+    AbogadosResponse:
+      type: object
+      properties:
+        abogados:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              nombre:
+                type: string
+              email:
+                type: string
+              total_consultas:
+                type: integer
+              consultas_respondidas:
+                type: integer
+              consultas_cerradas:
+                type: integer
+
+    ComprasResponse:
+      type: object
+      properties:
+        compras:
+          type: array
+          items:
+            $ref: '#/components/schemas/Compra'
+        total:
+          type: integer
+        totalPages:
+          type: integer
+        currentPage:
+          type: integer
+
+  responses:
+    BadRequest:
+      description: Solicitud incorrecta
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+
+    Unauthorized:
+      description: No autenticado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "No autenticado"
+
+    Forbidden:
+      description: No autorizado
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: "No autorizado"
+

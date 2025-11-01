@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tu Abogado en Línea - API Documentation</title>
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script>
+        window.onload = function() {
+            SwaggerUIBundle({
+                // Usar la URL del servidor donde esté alojado swagger.yaml
+                url: 'https://tuabogadoenlinea.free.nf/apis/swagger.yaml',
+                // O usar el contenido directamente (requiere convertir YAML a JSON)
+                // spec: {...},
+                dom_id: '#swagger-ui',
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                layout: "StandaloneLayout",
+                deepLinking: true,
+                filter: true,
+                validatorUrl: null
+            });
+        };
+    </script>
+</body>
+</html>
+
