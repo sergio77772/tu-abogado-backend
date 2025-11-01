@@ -1,12 +1,7 @@
 # Habilitar rewrite engine
 RewriteEngine On
 
-# Redirigir todas las peticiones a index.php
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^api/(.*)$ index.php?route=$1 [QSA,L]
-
-# Permitir acceso a archivos estáticos
+# Permitir acceso directo a archivos PHP
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
@@ -16,4 +11,7 @@ RewriteRule ^ - [L]
     Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
     Header set Access-Control-Allow-Headers "Content-Type, Authorization"
 </IfModule>
+
+# Páginas de error personalizadas (opcional)
+ErrorDocument 404 /index.php
 
