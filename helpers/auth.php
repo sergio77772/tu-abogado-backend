@@ -64,16 +64,52 @@ function verifyToken($token) {
 }
 
 /**
+ * Función alternativa para obtener headers (compatible con todos los servidores)
+ */
+function getAllHeaders() {
+    if (function_exists('getallheaders')) {
+        return getallheaders();
+    }
+    
+    // Alternativa para servidores que no tienen getallheaders()
+    $headers = [];
+    foreach ($_SERVER as $name => $value) {
+        if (substr($name, 0, 5) == 'HTTP_') {
+            $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($name, 5)))))] = $value;
+        }
+    }
+    
+    // Agregar headers especiales
+    if (isset($_SERVER['CONTENT_TYPE'])) {
+        $headers['Content-Type'] = $_SERVER['CONTENT_TYPE'];
+    }
+    if (isset($_SERVER['CONTENT_LENGTH'])) {
+        $headers['Content-Length'] = $_SERVER['CONTENT_LENGTH'];
+    }
+    
+    return $headers;
+}
+
+/**
  * Obtiene el token del header Authorization
  */
 function getAuthToken() {
-    $headers = getallheaders();
+    $headers = getAllHeaders();
+    
+    // Buscar Authorization en diferentes formatos
+    $auth = null;
     if (isset($headers['Authorization'])) {
         $auth = $headers['Authorization'];
-        if (preg_match('/Bearer\s+(.*)$/i', $auth, $matches)) {
-            return $matches[1];
-        }
+    } elseif (isset($headers['authorization'])) {
+        $auth = $headers['authorization'];
+    } elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        $auth = $_SERVER['HTTP_AUTHORIZATION'];
     }
+    
+    if ($auth && preg_match('/Bearer\s+(.*)$/i', $auth, $matches)) {
+        return $matches[1];
+    }
+    
     return null;
 }
 
