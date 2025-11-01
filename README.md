@@ -74,8 +74,13 @@ chmod 755 uploads/
 ## Uso de la API
 
 ### Base URL
+Para servidores InfinityFree, la estructura es:
+- Archivos deben estar en: `/htdocs/apis/`
+- URLs accesibles: `http://tuabogadoenlinea.free.nf/apis/`
+
+### Endpoints Base
 ```
-http://tu-dominio.com/api/
+http://tuabogadoenlinea.free.nf/apis/
 ```
 
 ### Autenticación
