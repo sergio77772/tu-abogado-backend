@@ -1,0 +1,26 @@
+# Logs
+logs/
+*.log
+
+# Uploads (excepto archivos necesarios)
+uploads/*
+!uploads/.gitkeep
+
+# Archivos de configuración sensibles
+config/config.local.php
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Archivos temporales
+*.tmp
+*.cache
+
